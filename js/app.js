@@ -42,11 +42,11 @@ canvas.style.margin = "auto";
 
 // Timing and frames per second
 let lastTime = 0;
-let timecount = 0;
-let animationTime = 0;
-let animationTotalTime = 0.4;
-let timeForLevel = 45;
-let gameOverTime = { levelOne: timeForLevel };
+let timecount = 0; //counts time for countdown
+let animationTime = 0; //counts time for animation shifting
+let animationTotalTime = 0.4; //Time for animation shifting
+let timeForLevel = 45; //Time for level game
+let gameOverTime = { levelOne: timeForLevel }; //Time for different level
 
 // Clusters and moves that were found
 let clusters = []; // { row, column }
@@ -114,15 +114,19 @@ function init() {
 
 // Start a new game
 function newGame() {
+  //Remove mouse event
+  canvas.removeEventListener("click", newGameWhenGameOver);
+
   //Add mouse event
   canvas.addEventListener("click", removeSelectedClusters);
-  // canvas.addEventListener("click", selectedButton);
-
+  canvas.addEventListener("mousemove", changeCursor);
   // Reset score
   score = 0;
 
   //Reset time for game
   gameOverTime.levelOne = timeForLevel;
+  timecount = 0;
+  animationTime = 0;
 
   //Reset moves for game
   countMoves.levelOne = movesForWin;
@@ -215,24 +219,30 @@ function render() {
 
     ctx.fillStyle = "#ffffff";
     ctx.font = "24px Marvin";
-    drawCenterText("Поздравляем!", 0, canvas.height / 2 - 30, canvas.width);
-    drawCenterText("Вы выиграли!", 0, canvas.height / 2, canvas.width);
-    drawCenterText("Сыграем ещё?", 0, canvas.height / 2 + 30, canvas.width);
+    drawCenterText("Поздравляем!", 0, canvas.height / 2 - 60, canvas.width);
+    drawCenterText("Вы выиграли!", 0, canvas.height / 2 - 30, canvas.width);
+    drawCenterText("Новая игра", 0, canvas.height / 2 + 30, canvas.width);
+
+    // Draw button shape
+    drawShape("Новая игра", -5, canvas.height / 2 + 5, canvas.width);
 
     canvas.removeEventListener("click", selectedButton);
-    canvas.addEventListener("click", newGameWhenHameOver);
+    canvas.addEventListener("click", newGameWhenGameOver);
   } else if (gameover) {
     ctx.fillStyle = "rgb(0, 0, 0)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = "#ffffff";
     ctx.font = "24px Marvin";
-    drawCenterText("Игра окончена", 0, canvas.height / 2 - 30, canvas.width);
-    drawCenterText(`Очки: ${score}`, 0, canvas.height / 2, canvas.width);
-    drawCenterText("Сыграем ещё?", 0, canvas.height / 2 + 30, canvas.width);
+    drawCenterText("Игра окончена", 0, canvas.height / 2 - 60, canvas.width);
+    drawCenterText(`Очки: ${score}`, 0, canvas.height / 2 - 30, canvas.width);
+    drawCenterText("Новая игра", 0, canvas.height / 2 + 30, canvas.width);
+
+    // Draw button shape
+    drawShape("Новая игра", -5, canvas.height / 2 + 5, canvas.width);
 
     canvas.removeEventListener("click", selectedButton);
-    canvas.addEventListener("click", newGameWhenHameOver);
+    canvas.addEventListener("click", newGameWhenGameOver);
   } else if (pause) {
     ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -389,6 +399,13 @@ function renderTiles() {
 function drawCenterText(text, x, y, width) {
   let textdim = ctx.measureText(text);
   ctx.fillText(text, x + (width - textdim.width) / 2, y);
+}
+
+//Draw button shape
+function drawShape(text, x, y, width) {
+  ctx.strokeStyle = "#ffffff";
+  let textdim = ctx.measureText(text);
+  ctx.strokeRect(x + (width - textdim.width) / 2, y, textdim.width + 10, 34);
 }
 
 // Create a random Field
@@ -592,7 +609,7 @@ function removeSelectedClusters(event) {
         if (
           mouseX >= field.tiles[i][j].pos[0] &&
           mouseX < field.tiles[i][j].pos[0] + field.dTileWidth &&
-          mouseY > field.tiles[i][j].pos[1] &&
+          mouseY >= field.tiles[i][j].pos[1] &&
           mouseY < field.tiles[i][j].pos[1] + field.dTileHeight
         ) {
           clusters = [];
@@ -632,7 +649,7 @@ function selectedButton(event) {
           canvas.removeEventListener("click", selectedButton);
           canvas.addEventListener("click", pauseOff);
         }
-      } else if (i == 2 && !pause) {
+      } else if (i == 2) {
         mixTiles();
         drawButtons();
       }
@@ -652,7 +669,7 @@ function pauseOff(event) {
   }
 }
 
-function newGameWhenHameOver(event) {
+function newGameWhenGameOver(event) {
   let textdim = ctx.measureText("Новая игра");
   if (
     event.offsetX >= (canvas.width - textdim.width) / 2 &&
@@ -661,5 +678,43 @@ function newGameWhenHameOver(event) {
     event.offsetY <= canvas.height / 2 + 30
   ) {
     newGame();
+  }
+}
+
+function changeCursor(event) {
+  let textdim = ctx.measureText("Новая игра");
+  for (let k = 0; k < buttons.length; k++) {
+    if (
+      event.offsetX >= buttons[k].x &&
+      event.offsetX <= buttons[k].x + buttons[k].width &&
+      event.offsetY >= buttons[k].y &&
+      event.offsetY <= buttons[k].y + buttons[k].height
+    ) {
+      canvas.style.cursor = "pointer";
+      break;
+    } else {
+      canvas.style.cursor = "auto";
+    }
+  }
+  if (gameover || youwin) {
+    if (
+      event.offsetX >= (canvas.width - textdim.width) / 2 &&
+      event.offsetX <= (canvas.width + textdim.width) / 2 &&
+      event.offsetY >= canvas.height / 2 + 10 &&
+      event.offsetY <= canvas.height / 2 + 30
+    ) {
+      if (gameover || youwin) {
+        canvas.style.cursor = "pointer";
+      }
+    }
+  } else if (pause) {
+    if (
+      event.offsetX >= 0 &&
+      event.offsetX <= canvas.width &&
+      event.offsetY >= 0 &&
+      event.offsetY <= canvas.height
+    ) {
+      canvas.style.cursor = "pointer";
+    }
   }
 }
